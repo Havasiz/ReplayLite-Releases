@@ -77,7 +77,11 @@ jobs:
           Copy-Item "$portable/ReplayLiteUpdater.exe" "$cache/ReplayLiteUpdater.exe"
           Copy-Item pending/update.txt,pending/update.sig $cache
           Copy-Item $setup "$cache/setup.exe"
-          $p = Start-Process "$cache/ReplayLiteUpdater.exe" -ArgumentList @(('"'+$cache+'"'),('"'+$old+'"'),'0','--test') -Wait -PassThru
+          # Start-Process -Wait also waits for descendants, including the restarted
+          # recorder which should keep running. Wait for the helper itself only.
+          $p = Start-Process "$cache/ReplayLiteUpdater.exe" -ArgumentList @(('"'+$cache+'"'),('"'+$old+'"'),'0','--test') -PassThru
+          if (!$p.WaitForExit(90000)) { $p.Kill($true); throw 'Startup updater did not exit within 90 seconds' }
+          $p.Refresh()
           if (Test-Path "$cache/updater-error.log") { Get-Content "$cache/updater-error.log" }
           if ($p.ExitCode) {
             if (Test-Path "$cache/installer.log") { Get-Content "$cache/installer.log" -Tail 30 }
