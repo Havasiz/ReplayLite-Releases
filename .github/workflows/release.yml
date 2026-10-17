@@ -2,7 +2,7 @@ name: Publish Windows downloads
 on:
   push:
     branches: [main]
-    paths: [release.json]
+    paths: [release.json, .github/workflows/release.yml, packages/SHA256SUMS.txt]
   workflow_dispatch:
 permissions:
   contents: write
