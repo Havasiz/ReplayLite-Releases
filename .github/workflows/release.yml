@@ -1,0 +1,89 @@
+name: Publish Windows downloads
+on:
+  push:
+    branches: [main]
+    paths: [release.json]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: public-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify packages and test installation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content release.json -Raw | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version' }
+          $expected = @("ReplayLite-$version-Setup-x64.exe", "ReplayLite-$version-Windows-x64.zip")
+          $lines = @(Get-Content packages/SHA256SUMS.txt)
+          if ($lines.Count -ne 2) { throw 'Expected two checksums' }
+          foreach ($name in $expected) {
+            $line = @($lines | Where-Object { $_ -match ('^[0-9a-f]{64}  ' + [regex]::Escape($name) + '$') })
+            if ($line.Count -ne 1) { throw "Missing checksum: $name" }
+            if ((Get-FileHash "packages/$name" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $line[0].Substring(0,64)) { throw "Checksum failed: $name" }
+          }
+          $install = Join-Path $env:RUNNER_TEMP 'ReplayLite-install-test'
+          $data = Join-Path $env:LOCALAPPDATA 'ReplayLite'
+          New-Item -ItemType Directory -Force $data | Out-Null
+          $ini = Join-Path $data 'ReplayLite.ini'
+          @('[Config]', 'Version=3', '[Replay]', 'Seconds=150', '[Startup]', 'InstantReplay=0', '[Updates]', 'CheckAutomatically=0') | Set-Content $ini
+          $before = (Get-FileHash $ini).Hash
+          $recording = Join-Path $data 'Videos/keep-recording.txt'
+          New-Item -ItemType Directory -Force (Split-Path $recording) | Out-Null
+          'Preserve this recording' | Set-Content $recording
+          $setup = Join-Path $PWD "packages/ReplayLite-$version-Setup-x64.exe"
+          for ($i=0; $i -lt 2; $i++) {
+            $p = Start-Process $setup -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',('/DIR="'+$install+'"')) -Wait -PassThru
+            if ($p.ExitCode) { throw "Setup failed: $($p.ExitCode)" }
+            if ((Get-FileHash $ini).Hash -ne $before) { throw 'Install/upgrade changed settings' }
+            if ((Get-Item "$install/ReplayLite.exe").VersionInfo.ProductVersion -ne $version) { throw 'Installed version mismatch' }
+            if (!(Test-Path "$install/category-rules.ini")) { throw 'Missing resources' }
+            $p = Start-Process "$install/ReplayLite.exe" -ArgumentList '--quit' -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru
+            if ($p.ExitCode) { throw 'Installed executable did not load' }
+          }
+          $installedHash = (Get-FileHash "$install/ReplayLite.exe").Hash
+          $p = Start-Process "$install/unins000.exe" -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+          if ($p.ExitCode -or (Test-Path "$install/ReplayLite.exe")) { throw 'Uninstall failed' }
+          if ((Get-FileHash $ini).Hash -ne $before -or !(Test-Path $recording)) { throw 'Uninstall removed user data' }
+          $portable = Join-Path $env:RUNNER_TEMP 'ReplayLite-zip-test'
+          Expand-Archive "packages/ReplayLite-$version-Windows-x64.zip" $portable
+          if ((Get-Item "$portable/ReplayLite.exe").VersionInfo.ProductVersion -ne $version) { throw 'ZIP version mismatch' }
+          if ((Get-FileHash "$portable/ReplayLite.exe").Hash -ne $installedHash) { throw 'Installer and ZIP executables differ' }
+          $p = Start-Process "$portable/ReplayLite.exe" -ArgumentList '--quit' -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru
+          if ($p.ExitCode) { throw 'ZIP executable did not load' }
+      - name: Publish release and update feed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const spec = JSON.parse(fs.readFileSync('release.json', 'utf8'));
+            const repo = context.repo, tag = `v${spec.version}`;
+            const names = [`ReplayLite-${spec.version}-Setup-x64.exe`, `ReplayLite-${spec.version}-Windows-x64.zip`, 'SHA256SUMS.txt'];
+            let release;
+            try {
+              release = (await github.rest.repos.getReleaseByTag({...repo, tag})).data;
+              if (!release.draft) throw new Error(`${tag} already published; bump the version`);
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: context.sha,
+                name: `ReplayLite ${tag}`, draft: true, prerelease: spec.prerelease,
+                body: fs.readFileSync('release-notes.md', 'utf8')})).data;
+            }
+            for (const name of names) {
+              const existing = release.assets.find(asset => asset.name === name);
+              if (existing) await github.rest.repos.deleteReleaseAsset({...repo, asset_id: existing.id});
+              await github.rest.repos.uploadReleaseAsset({...repo, release_id: release.id, name, data: fs.readFileSync(`packages/${name}`)});
+            }
+            await github.rest.repos.updateRelease({...repo, release_id: release.id, draft: false});
+            // Announce only after tests pass and every download has been published.
+            let sha;
+            try { sha = (await github.rest.repos.getContent({...repo, path: 'version.txt', ref: 'main'})).data.sha; }
+            catch (error) { if (error.status !== 404) throw error; }
+            await github.rest.repos.createOrUpdateFileContents({...repo, path: 'version.txt', branch: 'main', sha,
+              message: `Announce ReplayLite ${tag}`, content: Buffer.from(`${spec.version}\n`).toString('base64')});
