@@ -1,2 +1,2 @@
-fdc925ccf2b8eab81b0d12205fbcd081a3b12b0c20dfa75e50227811ef795228  ReplayLite-0.3.3-Setup-x64.exe
-e5e64a6fba61aa01ae1ad6aad2a2d2585eb3d0efebc7793c5403062e7dbef784  ReplayLite-0.3.3-Windows-x64.zip
+d4228227b840b8bc6a2b2fbda1d875dda7fd1518aaa14107a4826e05dd849856  ReplayLite-0.3.3-Setup-x64.exe
+3b0623b52d73b511ce9af592c00a02d967d0227c7aee6063e54c1c539c8478f1  ReplayLite-0.3.3-Windows-x64.zip

@@ -1,4 +1,4 @@
 ReplayLite-update-1
 version=0.3.3
-sha256=fdc925ccf2b8eab81b0d12205fbcd081a3b12b0c20dfa75e50227811ef795228
+sha256=d4228227b840b8bc6a2b2fbda1d875dda7fd1518aaa14107a4826e05dd849856
 emergency=0
