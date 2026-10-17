@@ -1,0 +1,7 @@
+* text=auto
+/pending/update.txt -text
+/update.txt -text
+*.sig binary
+*.bin binary
+*.exe binary
+*.zip binary

@@ -1,15 +1,13 @@
-Windows x64 preview with public downloads and optional update notifications.
+Windows x64 preview with startup updates.
 
-- **Setup-x64.exe**: install for your account with Start menu shortcut and uninstaller. No administrator access required.
-- **Windows-x64.zip**: extract the entire folder and run ReplayLite.exe.
-- **SHA256SUMS.txt**: checksums for both downloads.
+- The app checks for updates whenever it starts, even with automatic installation off.
+- **Install updates automatically** is off by default. With it off, newer versions show a notice. With it on, normal updates install at the next app launch before recording starts.
+- The publisher can sign an emergency security update that installs at startup regardless of the normal toggle. There is no remote command execution channel: only a newer-version installer matching the pinned signing key and SHA256 hash is accepted.
+- Signature checks, HTTPS restrictions and downgrade checks protect the updater. Running recordings are not stopped. The existing replay buffer is not carried across app restarts; completed recordings remain on disk.
+- Update checks do not send recordings, settings or account credentials. An offline app cannot receive an update instruction.
 
-Settings > General now has **Check for updates**, an **Automatic update checks** toggle (off by default), and **View releases / Download update**. Optional checks run at launch and every 24 hours. New versions produce a status notification and an overlay download banner. Downloads use the public distribution repository; no GitHub login is required. Updates are installed only when you choose, so recordings are never interrupted by a silent installer.
+This release is a normal update, not an emergency. Versions older than 0.3.3 need a manual installation to gain the new updater.
 
-Windows 11 x64, an NVIDIA GPU with NVENC API 12.1-compatible drivers, and a primary SDR landscape monitor connected to the NVIDIA GPU are required. No Visual Studio or FFmpeg runtime is needed. Testing has primarily used an RTX 4070 Ti.
+Download **Setup-x64.exe** for a normal per-user installation, or extract the whole **Windows-x64.zip**. Settings and recordings survive upgrades and uninstall. The installer does not require administrator rights. Automatic updates of ZIP copies add an uninstaller in the same folder.
 
-Settings and logs live in `%LOCALAPPDATA%\ReplayLite`; installed and ZIP builds share this folder. Updates and uninstall preserve settings and recordings. Existing source-checkout settings require manual import. System audio defaults on; microphone and Windows startup are opt-in.
-
-Capture, encoding, replay, manual recording, mixed/separate audio and A/V timing are unchanged. This is experimental software with measurable recording overhead and hardware limitations. The binaries are unsigned and Windows may show an unknown-publisher warning.
-
-The application source remains private. This repository contains compiled downloads, release documentation and update metadata only.
+Windows 11 x64, an NVIDIA NVENC API 12.1-compatible GPU/driver, and an NVIDIA-connected primary SDR landscape display are required. The Windows binaries are unsigned and Windows may show a warning. This is experimental software with measurable recording overhead and hardware/A/V limitations. Application source remains private.

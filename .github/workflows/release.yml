@@ -28,6 +28,16 @@ jobs:
             if ($line.Count -ne 1) { throw "Missing checksum: $name" }
             if ((Get-FileHash "packages/$name" -Algorithm SHA256).Hash.ToLowerInvariant() -ne $line[0].Substring(0,64)) { throw "Checksum failed: $name" }
           }
+          $policy = [IO.File]::ReadAllBytes("$PWD/pending/update.txt")
+          $signature = [IO.File]::ReadAllBytes("$PWD/pending/update.sig")
+          $key = [Security.Cryptography.CngKey]::Import([IO.File]::ReadAllBytes("$PWD/update-public-key.bin"),[Security.Cryptography.CngKeyBlobFormat]::EccPublicBlob)
+          $signer = [Security.Cryptography.ECDsaCng]::new($key)
+          try {
+            if (!$signer.VerifyData($policy,$signature,[Security.Cryptography.HashAlgorithmName]::SHA256)) { throw 'Update signature failed' }
+          } finally { $signer.Dispose(); $key.Dispose() }
+          $policyText = [Text.Encoding]::ASCII.GetString($policy)
+          $setupHash = (Get-FileHash "packages/ReplayLite-$version-Setup-x64.exe").Hash.ToLowerInvariant()
+          if ($policyText -notmatch ('\AReplayLite-update-1\nversion=' + [regex]::Escape($version) + '\nsha256=' + $setupHash + '\nemergency=[01]\n\z')) { throw 'Signed policy does not match installer' }
           $install = Join-Path $env:RUNNER_TEMP 'ReplayLite-install-test'
           $data = Join-Path $env:LOCALAPPDATA 'ReplayLite'
           New-Item -ItemType Directory -Force $data | Out-Null
@@ -57,6 +67,25 @@ jobs:
           if ((Get-FileHash "$portable/ReplayLite.exe").Hash -ne $installedHash) { throw 'Installer and ZIP executables differ' }
           $p = Start-Process "$portable/ReplayLite.exe" -ArgumentList '--quit' -WorkingDirectory $env:RUNNER_TEMP -Wait -PassThru
           if ($p.ExitCode) { throw 'ZIP executable did not load' }
+          # Exercise the real updater against the previous public app in this disposable account.
+          $old = Join-Path $env:RUNNER_TEMP 'ReplayLite-old'
+          $cache = Join-Path $env:RUNNER_TEMP 'ReplayLite-update-cache'
+          Invoke-WebRequest 'https://github.com/Havasiz/ReplayLite-Releases/releases/download/v0.3.2/ReplayLite-0.3.2-Windows-x64.zip' -OutFile "$env:RUNNER_TEMP/previous.zip"
+          Expand-Archive "$env:RUNNER_TEMP/previous.zip" $old
+          New-Item -ItemType Directory -Force $cache | Out-Null
+          Copy-Item "$portable/ReplayLiteUpdater.exe" "$cache/ReplayLiteUpdater.exe"
+          Copy-Item pending/update.txt,pending/update.sig $cache
+          Copy-Item $setup "$cache/setup.exe"
+          $p = Start-Process "$cache/ReplayLiteUpdater.exe" -ArgumentList @(('"'+$cache+'"'),('"'+$old+'"'),'0') -Wait -PassThru
+          if ($p.ExitCode) { throw 'Startup updater failed' }
+          if ((Get-Item "$old/ReplayLite.exe").VersionInfo.ProductVersion -ne $version) { throw 'Startup updater did not install new version' }
+          Start-Sleep -Seconds 2
+          $p = Start-Process "$old/ReplayLite.exe" -ArgumentList '--quit' -Wait -PassThru
+          if ($p.ExitCode) { throw 'Updated app did not restart' }
+          Start-Sleep -Seconds 2
+          $p = Start-Process "$old/unins000.exe" -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART') -Wait -PassThru
+          if ($p.ExitCode) { throw 'Updated app cleanup failed' }
+          if ((Get-FileHash $ini).Hash -ne $before -or !(Test-Path $recording)) { throw 'Startup updater changed user data' }
       - name: Publish release and update feed
         uses: actions/github-script@v7
         with:
@@ -81,9 +110,14 @@ jobs:
               await github.rest.repos.uploadReleaseAsset({...repo, release_id: release.id, name, data: fs.readFileSync(`packages/${name}`)});
             }
             await github.rest.repos.updateRelease({...repo, release_id: release.id, draft: false});
-            // Announce only after tests pass and every download has been published.
-            let sha;
-            try { sha = (await github.rest.repos.getContent({...repo, path: 'version.txt', ref: 'main'})).data.sha; }
-            catch (error) { if (error.status !== 404) throw error; }
-            await github.rest.repos.createOrUpdateFileContents({...repo, path: 'version.txt', branch: 'main', sha,
-              message: `Announce ReplayLite ${tag}`, content: Buffer.from(`${spec.version}\n`).toString('base64')});
+            // Publish the version and signed policy together, only after all assets exist.
+            const head = (await github.rest.git.getRef({...repo, ref: 'heads/main'})).data.object.sha;
+            const base = (await github.rest.git.getCommit({...repo, commit_sha: head})).data.tree.sha;
+            const tree = [];
+            for (const [name, data] of [['version.txt', Buffer.from(`${spec.version}\n`)], ['update.txt', fs.readFileSync('pending/update.txt')], ['update.sig', fs.readFileSync('pending/update.sig')]]) {
+              const blob = (await github.rest.git.createBlob({...repo, content: data.toString('base64'), encoding: 'base64'})).data.sha;
+              tree.push({path: name, mode: '100644', type: 'blob', sha: blob});
+            }
+            const built = (await github.rest.git.createTree({...repo, base_tree: base, tree})).data.sha;
+            const commit = (await github.rest.git.createCommit({...repo, message: `Announce ReplayLite ${tag}`, tree: built, parents: [head]})).data.sha;
+            await github.rest.git.updateRef({...repo, ref: 'heads/main', sha: commit});

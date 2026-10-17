@@ -36,14 +36,21 @@ opt-in. Choose your preferred recording folder in Settings.
 
 ## Updates
 
-Settings → General offers Check for updates, an optional Automatic update checks
-toggle (off by default), and a link to these releases. Checks run at launch and
-every 24 hours while enabled. No GitHub sign-in is needed. Checks fetch only a
-small public version file; no settings or recordings are uploaded.
+Settings → General offers Check for updates, Install updates automatically
+(off by default), and a link to these releases. Checks run at launch and every
+24 hours. With automatic installation off, a newer version shows a notice. With
+it on, normal updates install at the next app launch before capture starts.
+No GitHub sign-in is needed; no settings or recordings are uploaded.
 
-Updates never install silently. Download the newer setup, close ReplayLite, and
-install over the previous version. Settings and recordings survive upgrades and
+The publisher can sign an emergency security update that installs at app launch
+even when normal automatic installation is off. Only verified newer installers
+are accepted. Offline PCs cannot receive an update instruction. Versions older
+than 0.3.3 require manual installation to gain the startup updater.
+
+For manual installation, download the newer setup, close ReplayLite, and install
+over the previous version. Settings and recordings survive upgrades and
 uninstall. Installed and ZIP builds share `%LOCALAPPDATA%\ReplayLite` for data.
+Automatically updating a ZIP copy adds an uninstaller in the same folder.
 
 ## About this repository
 
