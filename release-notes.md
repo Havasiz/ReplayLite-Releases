@@ -1,3 +1,9 @@
+HUD and taskbar fixes:
+
+- Status icons stay visible when switching between a game and other apps, including when replay is off.
+- The overlay background no longer covers the taskbar.
+- HUD stacking is repaired on app switches without stealing focus or continuously redrawing.
+
 Windows x64 preview with startup updates.
 
 - The app checks for updates whenever it starts, even with automatic installation off.
