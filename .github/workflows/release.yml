@@ -79,7 +79,11 @@ jobs:
           Copy-Item $setup "$cache/setup.exe"
           $p = Start-Process "$cache/ReplayLiteUpdater.exe" -ArgumentList @(('"'+$cache+'"'),('"'+$old+'"'),'0','--test') -Wait -PassThru
           if (Test-Path "$cache/updater-error.log") { Get-Content "$cache/updater-error.log" }
-          if ($p.ExitCode) { throw 'Startup updater failed; see updater-error.log output above' }
+          if ($p.ExitCode) {
+            if (Test-Path "$cache/installer.log") { Get-Content "$cache/installer.log" -Tail 30 }
+            $detail = if (Test-Path "$cache/updater-error.log") { Get-Content "$cache/updater-error.log" -Raw } else { 'No error log' }
+            throw "Startup updater failed: $detail"
+          }
           if ((Get-Item "$old/ReplayLite.exe").VersionInfo.ProductVersion -ne $version) { throw 'Startup updater did not install new version' }
           Start-Sleep -Seconds 2
           $p = Start-Process "$old/ReplayLite.exe" -ArgumentList '--quit' -Wait -PassThru
