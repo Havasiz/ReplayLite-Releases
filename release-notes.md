@@ -1,7 +1,5 @@
-Quietly recover from Windows permission-screen and desktop capture interruptions.
+Make ON/OFF controls easier to see throughout ReplayLite.
 
-Expected capture access-denied, access-lost and disconnected-session errors no longer display the red "Recorder unavailable" notification. ReplayLite keeps its existing retry loop and resumes capture when desktop access returns. These interruptions also no longer switch the recorder from NV12 to the BGRA fallback path.
+Replay, microphone, Windows startup, automatic replay, automatic updates and system audio now use matching high-contrast switches. ON uses a bright mint track, OFF uses a lighter slate track with a bright outline. Each switch includes ON/OFF text and a knob that changes sides, so state does not depend on color alone. Existing click areas and settings behavior are unchanged; no animations or continuous rendering were added.
 
-Real capture and encoder failures still show errors. This change does not capture the protected Windows permission screen. Existing interruption behavior is retained: a capture session restarts, the replay buffer rebuilds, and an active manual recording is finalized rather than silently continued across the interruption.
-
-Includes the 0.3.5 system/microphone audio continuity fix. Settings and recordings survive upgrades. This is a normal update, not an emergency. Windows binaries are unsigned; application source remains private.
+Also includes the quiet Windows permission-screen recovery from 0.3.6 and the audio continuity fix from 0.3.5. Temporary capture interruptions still restart the capture session and rebuild the replay buffer. Settings and recordings survive upgrades. This is a normal update, not an emergency. Windows binaries are unsigned; application source remains private.
