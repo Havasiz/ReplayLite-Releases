@@ -1,9 +1,7 @@
-Fix audio crackling caused by jittery capture packet timestamps.
+Quietly recover from Windows permission-screen and desktop capture interruptions.
 
-System and microphone audio packets were continuous at the device, but independently rounded timestamps inserted small silent gaps and overlaps into the recorded PCM. The capture path now keeps adjacent device samples continuous while retaining the initial A/V timing anchor. Real discontinuities and large clock changes still reanchor.
+Expected capture access-denied, access-lost and disconnected-session errors no longer display the red "Recorder unavailable" notification. ReplayLite keeps its existing retry loop and resumes capture when desktop access returns. These interruptions also no longer switch the recorder from NV12 to the BGRA fallback path.
 
-On a controlled ten-second repeat, system placement improved from 188 gaps / 188 overlaps to zero; microphone placement improved from 180 / 180 to zero. This is a measured capture-path fix, not a claim that every possible audio fault is resolved. No mixer gains, encoder settings or fixed A/V offset changed.
+Real capture and encoder failures still show errors. This change does not capture the protected Windows permission screen. Existing interruption behavior is retained: a capture session restarts, the replay buffer rebuilds, and an active manual recording is finalized rather than silently continued across the interruption.
 
-Applies to replay and manual recording, mixed and separate tracks. All existing HUD and startup-update features remain. This is a normal update, not an emergency.
-
-Download Setup-x64.exe for installation, or extract the complete Windows-x64.zip. Settings and recordings survive upgrades. Windows 11 x64 and an NVIDIA NVENC-compatible GPU/driver with a primary SDR landscape monitor are required. Windows binaries are unsigned; application source remains private.
+Includes the 0.3.5 system/microphone audio continuity fix. Settings and recordings survive upgrades. This is a normal update, not an emergency. Windows binaries are unsigned; application source remains private.
