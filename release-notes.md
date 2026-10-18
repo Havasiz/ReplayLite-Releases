@@ -1,19 +1,9 @@
-HUD and taskbar fixes:
+Fix audio crackling caused by jittery capture packet timestamps.
 
-- Status icons stay visible when switching between a game and other apps, including when replay is off.
-- The overlay background no longer covers the taskbar.
-- HUD stacking is repaired on app switches without stealing focus or continuously redrawing.
+System and microphone audio packets were continuous at the device, but independently rounded timestamps inserted small silent gaps and overlaps into the recorded PCM. The capture path now keeps adjacent device samples continuous while retaining the initial A/V timing anchor. Real discontinuities and large clock changes still reanchor.
 
-Windows x64 preview with startup updates.
+On a controlled ten-second repeat, system placement improved from 188 gaps / 188 overlaps to zero; microphone placement improved from 180 / 180 to zero. This is a measured capture-path fix, not a claim that every possible audio fault is resolved. No mixer gains, encoder settings or fixed A/V offset changed.
 
-- The app checks for updates whenever it starts, even with automatic installation off.
-- **Install updates automatically** is off by default. With it off, newer versions show a notice. With it on, normal updates install at the next app launch before recording starts.
-- The publisher can sign an emergency security update that installs at startup regardless of the normal toggle. There is no remote command execution channel: only a newer-version installer matching the pinned signing key and SHA256 hash is accepted.
-- Signature checks, HTTPS restrictions and downgrade checks protect the updater. Running recordings are not stopped. The existing replay buffer is not carried across app restarts; completed recordings remain on disk.
-- Update checks do not send recordings, settings or account credentials. An offline app cannot receive an update instruction.
+Applies to replay and manual recording, mixed and separate tracks. All existing HUD and startup-update features remain. This is a normal update, not an emergency.
 
-This release is a normal update, not an emergency. Versions older than 0.3.3 need a manual installation to gain the new updater.
-
-Download **Setup-x64.exe** for a normal per-user installation, or extract the whole **Windows-x64.zip**. Settings and recordings survive upgrades and uninstall. The installer does not require administrator rights. Automatic updates of ZIP copies add an uninstaller in the same folder.
-
-Windows 11 x64, an NVIDIA NVENC API 12.1-compatible GPU/driver, and an NVIDIA-connected primary SDR landscape display are required. The Windows binaries are unsigned and Windows may show a warning. This is experimental software with measurable recording overhead and hardware/A/V limitations. Application source remains private.
+Download Setup-x64.exe for installation, or extract the complete Windows-x64.zip. Settings and recordings survive upgrades. Windows 11 x64 and an NVIDIA NVENC-compatible GPU/driver with a primary SDR landscape monitor are required. Windows binaries are unsigned; application source remains private.
