@@ -1,5 +1,7 @@
-Make ON/OFF controls easier to see throughout ReplayLite.
+Name new clips after their category using a readable, sortable timestamp.
 
-Replay, microphone, Windows startup, automatic replay, automatic updates and system audio now use matching high-contrast switches. ON uses a bright mint track, OFF uses a lighter slate track with a bright outline. Each switch includes ON/OFF text and a knob that changes sides, so state does not depend on color alone. Existing click areas and settings behavior are unchanged; no animations or continuous rendering were added.
+Saved replays and manual recordings now use filenames such as "RUST 2026.10.20 - 18.06.22.mp4" and "Desktop 2026.10.20 - 18.06.22.mp4". The category matches the destination folder, preserving friendly names and internal spacing. There is no .DVR suffix or fractional second field. Names sort by category, then local date/time within that category.
 
-Also includes the quiet Windows permission-screen recovery from 0.3.6 and the audio continuity fix from 0.3.5. Temporary capture interruptions still restart the capture session and rebuild the replay buffer. Settings and recordings survive upgrades. This is a normal update, not an emergency. Windows binaries are unsigned; application source remains private.
+Existing files are not renamed. If two clips have the same category and timestamp, the existing non-overwrite protection adds a numeric suffix. Capture, encoding, audio, replay length and recording quality are unchanged. The rejected GPU capture experiment is not included.
+
+Settings and recordings survive upgrades. This is a normal update, not an emergency. Windows binaries are unsigned; application source remains private.
