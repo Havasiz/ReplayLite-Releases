@@ -34,6 +34,20 @@ Shortcuts are editable in Settings. The app remains in the tray when you close t
 overlay. System audio is enabled by default; microphone and Windows startup are
 opt-in. Choose your preferred recording folder in Settings.
 
+## Separate game and microphone audio
+
+For normal playback, Mixed + Separate includes game and mic together while
+keeping their isolated tracks in the MP4. For editing in Clipchamp, enable
+**Settings > Audio > Save game + mic files**. It saves ` - Game.m4a` and
+` - Mic.m4a` right beside each new clip. Import all three files, put both audio
+items at 0:00, and mute the MP4's attached audio. Adjust the Mic item separately.
+
+For older ReplayLite separate-track clips, choose **Export clip audio...** in
+Audio settings. A combined-only recording cannot be split afterward. Exports
+copy the original AAC without re-encoding; no FFmpeg installation is needed.
+Existing clips and exported files are never overwritten. Automatic audio files
+are off by default on new installs and use about 6 MB per 150-second clip.
+
 ## Updates
 
 Settings → General offers Check for updates, Install updates automatically
